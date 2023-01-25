@@ -1,0 +1,219 @@
+---
+title: "Reached On Error - Baseball Case Study"
+author: "Almir Memedi, Endrit Kameraj, Vincent Riemenschneider"
+date: "2023-01-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Science und Statistik im Baseball
+
+Data Science im Baseball ist ein weit verbreitetes Gebiet, in welchem sich besonders in den letzten 20 Jahre viele unterschiedliche Metriken und Ansätze entwickelt haben, um die Performance von Spielern und Teams auf dem Spielfeld zu analysieren und bewerten. Dieses Feld der Datenanalyse im Baseball nennt sich Sabermetrics.
+
+Die Grenzen dabei sind nicht immer ganz schlüssig und so kann sich bei einigen Zusammenhängen die Frage nach der eigentlichen Sinnhaftigkeit stellen. 
+
+So wollen wir im folgenden Beispiel den Effekt von Attributen eines Spielers, wie zum Beispiel seiner Schnelligkeit oder Schlagtechnik auf seine Reached on Error (ROE) Zahlen herausstellen. 
+
+Reached on Errors sind in den Sabermetrics ein wenig beachteter Wert bei der Bewertung von Spielerperfomance. Im Allgemeinen erhält ein Spieler in der Offensive (genannt Hitter) einen ROE, wenn er aufgrund eines Fehlers der Verteidigung eine Base erreicht, die er ohne den Fehler nicht erreicht hätte. Ein Fehler ist z.B. ein schlechter Wurf, schlechtes Fielding (schlechtes aufnehmen des Balles) oder das Fallenlassen des Balls. Per Definition sind Fehler und die durch Fehler erreichten Bases ein Produkt der Fehler eines Defensivspielers.
+
+[Intro to Baseball: Errors](https://www.youtube.com/embed/6_Oi3SljFPs") 
+
+Um das besser zu verstehen, kann ein Video hilfreich sein, dass einen Reach-on-Error zeigt.
+
+[Dickerson reaches on error to spoil perfecto]("https://www.youtube.com/watch?v=0NxNBkum7ko")
+
+Genau darin liegt die Begründung vieler Reached on Error Gegener, denn auf den ersten Blick hat der Hitter keinen Einfluss auf seine Reached on Error zahlen. 
+Doch dies stimmt nicht ganz.
+
+Auf der offiziellen MLB website wird gesagt: 
+
+“By definition, errors are primarily the result of a fielder making a mistake. But even with that caveat, certain players -- namely speedy ground-ball hitters -- are likely to record more times reached on error than the average player.” - mlb.com
+
+Die folgende Korrelation zeigt dies grafisch, in welcher die Korrelation zwischen dem Sprinttempo eines Spielers und seinem ROE mit 0,11 schwach positiv ist. 
+
+
+```{r}
+data_csv <- read.csv2("stats1.csv",na="NA", dec=",")
+
+df <- data.frame(data_csv)
+
+df$sprint_speed <- as.numeric(df$sprint_speed)
+df$a_ROE <- as.numeric(df$a_ROE)
+
+plot(df$sprint_speed, df$a_ROE)
+abline(lm(df$a_ROE ~ df$sprint_speed))
+
+reg = lm(a_ROE ~ sprint_speed, data = df)
+summary(reg)
+
+cor(df$a_ROE, df$sprint_speed)
+```
+
+
+## Kausale Zusammenhänge
+
+Um die Situation besser zu beschreiben ist eine Visualisierung sinnvoll. Mithilfe von DAGs wird in der Folge versucht, die kausalen Zusammenhänge, die zu einem Reach-on-Error führen zu identifizieren und darzustellen.
+Da der Effekt der Schnelligkeit (Treatment "D") der Spieler auf einen Reach-on-Error (Outcome "Y") untersucht wird, bilden wir den ersten DAG auf dieser Grundlage. Die Unobservables "U" werdne nur auf diesen Zusammenhang betrachtet, um eine bessere Übersicht zu gewährleisten. Dazu müssen zunächst die benötigten Packages installiert und aufgerufen werden.
+
+```{r}
+library(dagitty)
+library(ggdag)
+
+dag_confound1 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  }
+")
+
+```
+
+```{r}
+plot(dag_confound1)
+```
+
+## Covariates auf "D"
+
+Die Durchschnittsgeschwindigkeit eines Spielers ist von mehreren Faktoren abhängig. Messbare Faktoren sind dabei die Körpergröße ("L") und das Körpergewicht ("M"). Die Körpergröße kann einen Einfluss auf das Gewicht haben.
+
+```{r}
+dag_confound2 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  D <- M ;
+  D <- L ;
+  M <- L ;
+  }
+")
+```
+
+```{r}
+plot(dag_confound2)
+```
+
+## Weitere Einflüsse auf das Treatment
+
+Kraft ("K") ist Masse mal Beschleunigung. Ein für viele geläufiger physikalischer Zusammenhang, der in diesem Fall gleich mehrere Dinge impliziert. Zumal ist die Beschleungigung ein erheblicher Einflussfaktor auf die Geschwindigkeit. Diese wächst bei steigender Kraft. Ebenso verhält es sich mit der Körpermasse. Dabei besteht ein direkter Zusammengang zur Kraft.
+
+```{r}
+dag_confound3 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  D <- M ;
+  D <- L ;
+  M <- L ;
+  D <- K ;
+  K <- M ;
+  }
+")
+```
+
+```{r}
+plot(dag_confound3)
+```
+
+## Covariates auf das Outcome
+
+Die Website der MLB verweist neben der Korrelation zwischen Geschwindigkeit und dem Outcome auch darauf, dass Groundballhitter mit höherer Wahrscheinlichkeit einen Reach-on-Error provozieren. Solche Schläge werden zudem eher von weniger Kräftigen Spielern ausgeführt. Hier lässt sich auch erkennen, dass Kraft nicht gleich Kraft ist und man dort ebenfalls weiter differenzieren könnte.
+
+```{r}
+dag_confound4 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  D <- M ;
+  D <- L ;
+  M <- L ;
+  D <- K ;
+  K <- M ;
+  T <- K ;
+  Y <- T ;
+  }
+")
+```
+
+```{r}
+plot(dag_confound4)
+```
+
+Die Schlagtechnik ("T") kann zudem von der Wurftechnik des Pitchers ("P") beeinflusst werden, da die Flugkurve des Balls die Schlagrichtung zum Teil vorgibt.
+
+```{r}
+dag_confound5 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  D <- M ;
+  D <- L ;
+  M <- L ;
+  D <- K ;
+  K <- M ;
+  T <- K ;
+  Y <- T ;
+  T <- P ;
+  }
+")
+```
+
+```{r}
+plot(dag_confound5)
+```
+
+## Nichtmenschliche Einflüsse
+
+Neben den Einflüssen, die einen direkten Zusammenhang zu den handelnden Akteuren haben, spielen auch weitere Faktoren eine Rolle. Feld("F")- und Wetterverhältnisse ("W") sind schwer zu quantifizierende Größen, die eine kausale Analyse erschweren. Während Dinge wie Windstärke gemessen werden können, ist es schwer zu bemessen, was für eine Rolle Regenfälle, Hitze oder starkes Sonnenlicht in Bezug auf das Leistungsvermögen des Spielers haben, der den Fehler verursacht. Dies darf in der kausalen Analyse zumindest nicht unterschlagen werden.
+
+```{r}
+dag_confound6 <- dagitty("dag {
+  Y <- D ;
+  Y <- U ;
+  D <- U ;
+  D <- M ;
+  D <- L ;
+  M <- L ;
+  D <- K ;
+  K <- M ;
+  T <- K ;
+  Y <- T ;
+  T <- P ;
+  Y <- W ;
+  Y <- F ;
+  F <- W ;
+  }
+")
+```
+
+```{r}
+plot(dag_confound6)
+```
+
+## Legende
+
+Y: Outcome (Reach-on-Error)
+D: Treatment (Schnelligkeit)
+U: Unobservables
+L: Körperlänge/-größe
+M: Masse/Gewicht des Spielers
+K: Kraft
+T: Schlagtechnik
+P: Pitcher
+W: Wetterverhältnisse
+F: Feldverhältnisse
+
+## Schlussfolgerung
+
+Wie bereits angeführt, findet man auf der offiziellen Website der MLB folgende Hypothese: 
+„By definition, errors are primarily the result of a fielder making a mistake. But even with that caveat, certain players – namely speedy ground-ball hitters – are likely to record more times reached on error than the average player.”
+Sowohl die von uns dargestellte Korrelation zwischen der Sprintgeschwindigkeit und dem Auftreten des ROE, als auch die weiteren kausalen Zusammenhänge, welche sämtliche Covariates betrachten wie die Schlagkraft oder die Wetterverhältnisse, zeigen, dass man durchaus von einem Zusammenhang zwischen einem „speedy ground-ball hitter“ und dem Auftreten von ROE ausgehen kann. 
+Inwiefern dieser Zusammenhang, jedoch kausal zu analysieren ist, lässt sich nicht so leicht beantworten. Zwar konnten wir eine Korrelation zwischen Sprintgeschwindigkeit und ROE feststellen, welche sehr schwach war, doch eine klare kausale Aussage zu treffen gestaltet sich besonders wegen der vielen Einflussfaktoren als schwierig. Außerdem werden diese Einflussfaktoren auch in der Hypothese der MLB nicht berücksichtigt.
+
+## Quellen
+
+Reached On Error (ROE), in: mlb.com, 2023, https://www.mlb.com/glossary/standard-stats/reached-on-error, letzter Zugriff: 24. Januar 2023.
+
+Alan Schwarz, Is Reached on an Error a Statistical Reach?, in: nytimes.com, 11. Juni 2006, https://www.mlb.com/glossary/standard-stats/reached-on-error, letzter Zugriff: 23. Januar 2026.
