@@ -1,0 +1,1 @@
+Data science is a widely used field in baseball, in which many different approaches to analyzing teams and player data have developed. The boundaries are not always entirely consistent. In our project, we try to demonstrate these limitations in a causal context within the example of Reached on Errors (ROE).
