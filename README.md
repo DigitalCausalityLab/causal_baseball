@@ -1,4 +1,4 @@
-# Collider Bias: The Hairdesser Example <a href="https://digitalcausalitylab.github.io/"><img src="figures/logo.png" align="right" width = "120" /></a>
+# Causal Baseball: The Case of Reach on Error <a href="https://digitalcausalitylab.github.io/"><img src="figures/logo.png" align="right" width = "120" /></a>
 
 ### Abstract
 
