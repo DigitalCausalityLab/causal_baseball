@@ -2,34 +2,26 @@
 
 ### Abstract
 
-In our data product, we contribute to the Digital Causality Lab project by 
-analyzing the collider bias, which is also referred to as the selection bias in 
-some cases. The collider bias is one possible source of a bias under the 
-null hypothesis, which can skew the results of a causal case study, 
-permitting the flow of association when there is no underlying causal 
-relationship between a set of variables. 
+Data Science in baseball is a widely spread field in which many different metrics and approaches have been developed, particularly in the last 20 years, to analyze and evaluate the performance of players and teams on the field. This field of data analysis in baseball is called Sabermetrics.
 
-![](figures/hairdresser.png)
+The boundaries are not always entirely conclusive, and for some relationships, the question of actual meaningfulness can arise.
 
-To this end, we simulate a data set in the statistical software R, containing 
-500 barbershops as our observed units. Every unit has a friendliness-
-score and a quality-score, referring to the employees and the received 
-haircuts, respectively, which are independently and identically distributed. 
-Also, every barbershop gets a rating ranging from one to five stars, which 
-is affected by the combination of the other two variables.
+In the following example, we aim to highlight the effect of a player's attributes, such as their speed or hitting technique, on their Reached on Error (ROE) numbers.
 
-We illustrate the collider bias and its effects by showing the results when 
-conditioning for the collider, i.e., only focusing on four-star barbershops 
-for example, and comparing these to the results in the case where we do 
-not condition for any star rating. 
+Reached on Errors is a somewhat overlooked value in Sabermetrics when evaluating player performance. In general, an offensive player (called a Hitter) receives an ROE when they reach a base due to a defensive error that they would not have reached without the error. An error can be, for example, a bad throw, bad fielding (poor ball retrieval), or dropping the ball. By definition, errors and bases reached due to errors are a product of a defensive player's mistakes.
 
+With this data product we want to perform empirical evidence on the following quote stated on [mlb.com](https://www.mlb.com/glossary/standard-stats/reached-on-error)
+
+> “By definition, errors are primarily the result of a fielder making a mistake. But even with that caveat, certain players -- namely speedy ground-ball hitters -- are likely to record more times reached on error than the average player.” - mlb.com
+
+![](figures/causalbaseball.png)
 
 ### Current State and Call for Extension
 
-Currently, we generated the data and illustrate the example in a MS PowerPoint presentation.
-In a next step, the case study could be extended by
+Currently, we investigated the causal relationships of the underlying problems using DAGs. We downloaded data from [mlb.com](https://www.mlb.com/) and think our data product could be further developed in terms of
 
-* Including the example in a Quarto notebook or presentation
-* Setting up a shiny app in R or Python such that users can interactively play around with sample selection according to ratings
-* Collect and analyze real data, e.g., on google recommendations
+* Careful analysis of the data
+* Evidence on causal relationships and assumptions 
+* Formulation of testable hypotheses
+* Identification approach: Is there a way to provide empirical evidence on the causal relationship stated above? Can we find an instrumental variables or use other quasi-experimental methods?
 
